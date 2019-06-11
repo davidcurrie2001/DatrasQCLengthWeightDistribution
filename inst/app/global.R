@@ -1,6 +1,8 @@
+library(tidyverse)
 # Get Data
 #dataInputFile <- "/home/user/Documents/IE_IGFS_LFs.csv"
-dataInputFile <- system.file("extdata", "IE_IGFS_LFs.csv", package = "icesHackathon2018G3")
+#dataInputFile <- system.file("../extdata", "IE_IGFS_LFs.csv", package = "icesHackathon2018G3")
+dataInputFile <- "../extdata/IE_IGFS_LFs.csv"
 print(dataInputFile)
 parsedData <- read_csv(dataInputFile)
 

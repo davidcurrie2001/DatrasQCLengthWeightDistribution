@@ -1,3 +1,4 @@
+library(plotly)
 # Define UI ----
 ui <- fluidPage(
   titlePanel("QC Tool"),

@@ -28,3 +28,5 @@ In future, the app could be extended to be able to:
 * Check for sufficient sample size 
 
 By: Nissa Ferm and Ibrahim Umar with help from Dave Stokes, the ICES Data Centre and Barbara Schoute ;)
+
+Subsequent edits by David Currie

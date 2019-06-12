@@ -2,8 +2,8 @@ library(tidyverse)
 # Get Data
 #dataInputFile <- "/home/user/Documents/IE_IGFS_LFs.csv"
 #dataInputFile <- system.file("../extdata", "IE_IGFS_LFs.csv", package = "icesHackathon2018G3")
-dataInputFile <- "../extdata/IE_IGFS_LFs.csv"
-print(dataInputFile)
+dataInputFile <- "data/IE_IGFS_LFs.csv"
+#print(dataInputFile)
 parsedData <- read_csv(dataInputFile)
 
 # Assuming we operate on one haulSubsetType of quarters, cruise, ship, and countries
@@ -35,7 +35,7 @@ getHaulList <- function(haulSubsetType){
 
 # Helper function to choose the available species based on the haul type
 getSpeciesList <- function(haulSubsetType){
-  print(haulSubsetType)
+  #print(haulSubsetType)
   if(haulSubsetType=="all")
     species <- unique(parsedData[parsedData$Year==maxYear,]$SpecCode) 
   if(haulSubsetType=="last"){
@@ -57,10 +57,10 @@ Brush_densityplot <- function(This_year, Fish_choice, Last_haul, fish_data){
 
   if(length(Last_haul)==0) return(NULL)
  
-  print(This_year)
-  print(Fish_choice)
+  #print(This_year)
+  #print(Fish_choice)
 
-  print(paste("ALast haul:", Last_haul))
+  #print(paste("ALast haul:", Last_haul))
 
   # Find the nearest hauls
   #xp <- unique(unlist(fish_data[fish_data$Year==This_year, "HaulNo"]))
@@ -68,11 +68,11 @@ Brush_densityplot <- function(This_year, Fish_choice, Last_haul, fish_data){
   #else if(Last_haul > max(xp)) Last_haul <- max(xp)
   #else Last_haul <- which.min(abs(xp - as.integer(Last_haul))) 
   
-  print(paste("BLast haul:", Last_haul))
+  #print(paste("BLast haul:", Last_haul))
 
   Current_Station <- getCurrentStation(This_year, Last_haul)
 
-  print(Current_Station)
+  #print(Current_Station)
 
   #Last Haul refers to the brush point from the K plot. 
 density_histor <- fish_data %>% filter(Year != This_year)%>%

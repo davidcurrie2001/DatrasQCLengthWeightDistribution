@@ -1,11 +1,48 @@
 # Define server logic ----
-server <- function(input, output) {
-  getSpecies <- function(haulSubsetType="lenWt"){
-         if(is.null(input[["haulSubset"]]))
-	   return(list("None"))
-         else
-	   return(as.list(getSpeciesList(input[["haulSubset"]])))
-  }
+server <- function(input, output,session) {
+  
+  
+  # Use reactive poll so that our data will be updated when the data/filteredData.rds is updated
+  DataAndFilters <- reactivePoll(1000, session,
+                                 # This function returns the time that files were last modified
+                                 checkFunc = function() {
+                                   myValue <- ''
+                                   if (file.exists(AllDataFile)) {
+                                     myValue <- paste(myValue , file.info(AllDataFile)$mtime[1])
+                                   }
+                                   if (file.exists(myFilters)) {
+                                     myValue <- paste(myValue , file.info(myFilters)$mtime[1])
+                                   }
+                                   myValue
+                                 },
+                                 # This function returns the content the files
+                                 valueFunc = function() {
+                                   #print('Loading data')
+                                   allData <- ''
+                                   filters <- ''
+                                   if (file.exists(AllDataFile)) {
+                                     allData <- readICES(AllDataFile ,strict=TRUE)
+                                   } 
+                                   if (file.exists(myFilters)){
+                                     filters <- read.csv(myFilters, header = TRUE)
+                                   }
+                                   list(allData,filters)
+                                 }
+  )
+  
+
+  
+  
+  HL<- reactive({
+    
+    d <-DataAndFilters()[[1]]
+    f <-DataAndFilters()[[2]]
+    
+    dataToUse <- FilterData(d,f)
+    
+    dataToUse[["HL"]]
+  })
+
   # Radio button for the type of haul subset
   output$choose_haulSubset <- renderUI({
        radioButtons("haulSubset", "Highlight:",
@@ -17,28 +54,43 @@ server <- function(input, output) {
                  "last", "all"
                ))
   })
-  # Drop-down selection box for which data set
-  output$choose_species <- renderUI({
-      selectInput("species", "Species", choices=getSpecies("lenWt"), selected=1)
-  })
+
   # Print out Hauls involved
   output$list_hauls <- renderUI({
+    
+    #d <-DataAndFilters()[[1]]
+    #f <-DataAndFilters()[[2]]
+    
+    #dataToUse <- FilterData(d,f)
+    
+    #HL<-  dataToUse[["HL"]]
+    
       if(is.null(input[["haulSubset"]]))
         helpText("")
       else
-        helpText(paste("Haul(s) involved are:", toString(getHaulList(input[["haulSubset"]]))))
+        helpText(paste("Haul(s) involved are:", toString(getHaulList(input[["haulSubset"]],dataToUse=HL))))
   })
   
   # Define for the plots
   output$plot_main <- renderPlotly({
-    ggplotly(K_plot(parsedData, input$species, maxYear, getHaulList(input[["haulSubset"]])))
+    
+    #ggplotly(K_plot(HL, input$species, maxYear, getHaulList(input[["haulSubset"]],dataToUse=HL)))
+    ggplotly(K_plot(fish_data=HL, This_year=maxYear, Button_choice=getHaulList(input[["haulSubset"]],dataToUse=HL)))
   })
 
   # Define for the sub-plots on-hover
   output$plot_sub <- renderPlot({
-    d <- event_data("plotly_hover")
-    if (!is.null(d))
-        Brush_densityplot(maxYear, input$species, d$x, parsedData)
+    
+    #d <-DataAndFilters()[[1]]
+    #f <-DataAndFilters()[[2]]
+    
+    #dataToUse <- FilterData(d,f)
+    
+    #HL<-  dataToUse[["HL"]]
+   
+    ed <- event_data("plotly_hover")
+    if (!is.null(ed))
+        Brush_densityplot(maxYear,  ed$x, HL)
   })
 
   output$info <- renderText({
@@ -52,11 +104,11 @@ server <- function(input, output) {
              " ymin=", round(e$ymin, 1), " ymax=", round(e$ymax, 1))
     }
 
-    d <- event_data("plotly_hover")
-    if(!is.null(d))
+    ed <- event_data("plotly_hover")
+    if(!is.null(ed))
      paste0(
-        "Hover status: ", xy_str(d),
-        "Haul selected:", d$x
+        "Hover status: ", xy_str(ed),
+        "Haul selected:", ed$x
      )
     else
 	"Please hover on a point"

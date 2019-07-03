@@ -1,64 +1,120 @@
+library(shiny)
+library(DATRAS)
+library(plotly)
+
 library(tidyverse)
+
+DefaultText <- "Any"
+
+# File names
+AllDataFile <- "data/DATRAS_Exchange_Data.csv"
+#filteredFile <- "data/filteredData.rds"
+myFilters <- "data/myFilters.csv"
+
+# Use the filters on the data supplied
+FilterData<-function(allData,filtersToUse){
+  
+  # Filter the data using the selected values
+  filteredData <- allData
+  
+  # Try and filter the data by all vlaues in filtersToUse 
+  for (i in colnames(filtersToUse)){
+    filteredData <- filterDataByParameter(filteredData,filtersToUse,i)
+  }
+  
+  filteredData
+  
+}
+
+# Use the filter values to subset the DATRAS data
+filterDataByParameter <- function(dataToFilter,filtersToUse,paramName){
+  
+  selectedValue <- ''
+  dataToReturn <- dataToFilter
+  
+  if (paramName %in% colnames(filtersToUse)){
+    selectedValue <- as.character(filtersToUse[1,paramName])
+    if (selectedValue != DefaultText){
+      
+      conditionToCheck <- paste("dataToReturn <- subset.DATRASraw(dataToFilter,",paramName,"=='",selectedValue, "')",sep = "")
+      #print(conditionToCheck)
+      # Need to use eval and parse so we can dynamically build the command, otherwise the values passed to ... in the subset.DATRASraw 
+      # function will be taken literally
+      eval(parse(text=conditionToCheck))
+    }
+  }
+  
+  dataToReturn
+}
+
+
 # Get Data
 #dataInputFile <- "/home/user/Documents/IE_IGFS_LFs.csv"
 #dataInputFile <- system.file("../extdata", "IE_IGFS_LFs.csv", package = "icesHackathon2018G3")
-dataInputFile <- "data/IE_IGFS_LFs.csv"
+#dataInputFile <- "data/IE_IGFS_LFs.csv"
 #print(dataInputFile)
-parsedData <- read_csv(dataInputFile)
+#parsedData <- read_csv(dataInputFile)
 
 # Assuming we operate on one haulSubsetType of quarters, cruise, ship, and countries
-maxYear <- max(unique(parsedData$Year))
+#maxYear <- max(unique(parsedData$Year))
+
+# TODO fix this
+#maxYear <- 2018
 
 # Color
 Current_color <- "#e69500"
 Hist_color <- "#00c4e6"
 
 # Get the last haul of the selected year
-getLastHaul <- function(year) {
-  max(getHauls(year))
+getLastHaul <- function(year, dataToUse) {
+  max(getHauls(year, dataToUse))
 }
 
 # Get last list of of the selected year
-getHauls <- function(year = maxYear) {
-  unique(parsedData[parsedData$Year==year,]$HaulNo)
+getHauls <- function(year=1, dataToUse) {
+  #print('getHauls')
+  #print(paste("year",year))
+  #print(paste("nrow(dataToUse)",nrow(dataToUse)))
+  #print(head(dataToUse))
+  
+  if (year==-1){
+    returnValue <- unique(dataToUse()[,]$HaulNo)
+  } else {
+    returnValue <- unique(dataToUse()[dataToUse()$Year==year,]$HaulNo)
+  }
+  
+  
+  #returnValue <- unique(dataToUse[dataToUse$Year==year,]$HaulNo)
+  #print(returnValue)
+  returnValue
 }
 
 # Helper function to choose the correct get haul function (above)
-getHaulList <- function(haulSubsetType){
+getHaulList <- function(haulSubsetType, dataToUse){
   if(haulSubsetType=="all")
-    hauls <- getHauls() 
+    hauls <- getHauls(dataToUse=dataToUse) 
   if(haulSubsetType=="last"){
-    hauls <- getLastHaul(maxYear)
+    #print(as.character(dataToUse$Year))
+    maxYear <- max(unique(as.character(dataToUse()$Year)))
+    #print(paste("maxYear",maxYear))
+    hauls <- getLastHaul(year=maxYear,dataToUse=dataToUse)
   }
   return(hauls)
 }
 
-# Helper function to choose the available species based on the haul type
-getSpeciesList <- function(haulSubsetType){
-  #print(haulSubsetType)
-  if(haulSubsetType=="all")
-    species <- unique(parsedData[parsedData$Year==maxYear,]$SpecCode) 
-  if(haulSubsetType=="last"){
-    # Get latest haul
-    lastHaul <- getLastHaul(maxYear)
-    species <- unique(parsedData[parsedData$Year==maxYear & parsedData$HaulNo==lastHaul,]$SpecCode)
-  }
-  return(species)
-}
 
 
-getCurrentStation <- function(year, haul) {
+getCurrentStation <- function(year, haul, dataToUse) {
   if(length(haul)==0) return(NULL)
-  stations <- unique(trimws(as.character(parsedData[parsedData$Year==year & parsedData$HaulNo==haul,]$StNo)))
+  stations <- unique(trimws(as.character(dataToUse()[dataToUse()$Year==year & dataToUse()$HaulNo==haul,]$StNo)))
   return(stations)
 }
 
-Brush_densityplot <- function(This_year, Fish_choice, Last_haul, fish_data){
+Brush_densityplot <- function(This_year, Last_haul, fish_data){
 
   if(length(Last_haul)==0) return(NULL)
  
   #print(This_year)
-  #print(Fish_choice)
 
   #print(paste("ALast haul:", Last_haul))
 
@@ -70,23 +126,25 @@ Brush_densityplot <- function(This_year, Fish_choice, Last_haul, fish_data){
   
   #print(paste("BLast haul:", Last_haul))
 
-  Current_Station <- getCurrentStation(This_year, Last_haul)
+  Current_Station <- getCurrentStation(This_year, Last_haul,fish_data)
 
   #print(Current_Station)
 
   #Last Haul refers to the brush point from the K plot. 
-density_histor <- fish_data %>% filter(Year != This_year)%>%
-  filter(SpecCode == Fish_choice)%>% #Fish selection var,
+density_histor <- fish_data() %>% 
+  filter(Year != This_year)%>%
+  #filter(SpecCode == Fish_choice)%>% #Fish selection var,
   filter(StNo == Current_Station)#Current Station to match current haul location
 
-density_histor <- as.data.frame(rep(density_histor$LngtClass, density_histor$HLNoAtLngt))
+density_histor <- as.data.frame(rep(density_histor$LngtClas, density_histor$HLNoAtLngt))
 colnames(density_histor) <- "den_hist"
 
-density_curr <- fish_data %>% filter(Year == This_year)%>%
-  filter(SpecCode == Fish_choice)%>%
+density_curr <- fish_data() %>% 
+  filter(Year == This_year)%>%
+  #filter(SpecCode == Fish_choice)%>%
   filter(HaulNo == Last_haul)
 
-density_curr <- as.data.frame(rep(density_curr$LngtClass, density_curr$HLNoAtLngt))
+density_curr <- as.data.frame(rep(density_curr$LngtClas, density_curr$HLNoAtLngt))
 colnames(density_curr) <- "den_curr"
 
 
@@ -109,9 +167,9 @@ A <- -5.446 # intercept
 B <- 3.1818 #slope of the fit
 
 #Calculates the estimated wieght for fish
-fish_stats <- fish_data %>%
-  filter(SpecCode == Fish_choice)%>%
-  mutate(Pred_Wt = HLNoAtLngt * (exp(A)*(LngtClass/10)^B))%>%
+fish_stats <- fish_data() %>%
+  #filter(SpecCode == Fish_choice)%>%
+  mutate(Pred_Wt = HLNoAtLngt * (exp(A)*(LngtClas/10)^B))%>%
   group_by(Year,HaulNo,CatIdentifier)%>%
   summarise(K = sum(Pred_Wt) - mean(SubWgt),
             Num_fish = sum(HLNoAtLngt)) 

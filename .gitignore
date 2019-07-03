@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 *.bat
+*.db
+*.rds
+*.csv

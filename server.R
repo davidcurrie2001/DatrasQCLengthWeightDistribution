@@ -31,16 +31,38 @@ server <- function(input, output,session) {
   )
   
 
-  
-  
-  HL<- reactive({
+  # Reactive data
+  myData<- reactive({
     
     d <-DataAndFilters()[[1]]
     f <-DataAndFilters()[[2]]
     
     dataToUse <- FilterData(d,f)
     
-    dataToUse[["HL"]]
+  })
+  
+  # Reactive HL data
+  HL<- reactive({
+    myData()[["HL"]]
+  })
+  
+  # Reactive HH data
+  HH<- reactive({
+    myData()[["HH"]]
+  })
+  
+  # Reactive CA data
+  CA<- reactive({
+    myData()[["CA"]]
+  })
+  
+
+  
+  # Reactive max year
+  maxYear<- reactive({
+    
+    max(unique(as.character(HL()$Year)))
+    
   })
 
   # Radio button for the type of haul subset
@@ -48,49 +70,42 @@ server <- function(input, output,session) {
        radioButtons("haulSubset", "Highlight:",
                choiceNames = list(
                  "Last haul",
-                 "All hauls (Stand in for 24 hours)"
+                 "Last day",
+                 "All hauls"
                ),
                choiceValues = list(
-                 "last", "all"
+                 "last", 
+                 "lastday",
+                 "all"
                ))
   })
 
   # Print out Hauls involved
   output$list_hauls <- renderUI({
     
-    #d <-DataAndFilters()[[1]]
-    #f <-DataAndFilters()[[2]]
-    
-    #dataToUse <- FilterData(d,f)
-    
-    #HL<-  dataToUse[["HL"]]
-    
       if(is.null(input[["haulSubset"]]))
         helpText("")
       else
-        helpText(paste("Haul(s) involved are:", toString(getHaulList(input[["haulSubset"]],dataToUse=HL))))
+        helpText(paste("Haul(s) involved are:", toString(getHaulList(input[["haulSubset"]],HLData=HL,HHData=HH))))
   })
   
   # Define for the plots
   output$plot_main <- renderPlotly({
     
-    #ggplotly(K_plot(HL, input$species, maxYear, getHaulList(input[["haulSubset"]],dataToUse=HL)))
-    ggplotly(K_plot(fish_data=HL, This_year=maxYear, Button_choice=getHaulList(input[["haulSubset"]],dataToUse=HL)))
+    unfilteredData <-  DataAndFilters()[[1]][["HL"]]
+    
+    ggplotly(K_plot(This_year=maxYear(), Button_choice=getHaulList(input[["haulSubset"]],HLData=HL,HHData=HH),fish_data=HL, all_data=unfilteredData ))
+    
   })
 
   # Define for the sub-plots on-hover
   output$plot_sub <- renderPlot({
     
-    #d <-DataAndFilters()[[1]]
-    #f <-DataAndFilters()[[2]]
+    unfilteredData <-  DataAndFilters()[[1]][["HL"]]
     
-    #dataToUse <- FilterData(d,f)
-    
-    #HL<-  dataToUse[["HL"]]
-   
     ed <- event_data("plotly_hover")
     if (!is.null(ed))
-        Brush_densityplot(maxYear,  ed$x, HL)
+        Brush_densityplot(maxYear(),  ed$x, HL, unfilteredData)
   })
 
   output$info <- renderText({

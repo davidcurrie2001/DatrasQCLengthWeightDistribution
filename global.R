@@ -48,56 +48,56 @@ filterDataByParameter <- function(dataToFilter,filtersToUse,paramName){
 }
 
 
-# Get Data
-#dataInputFile <- "/home/user/Documents/IE_IGFS_LFs.csv"
-#dataInputFile <- system.file("../extdata", "IE_IGFS_LFs.csv", package = "icesHackathon2018G3")
-#dataInputFile <- "data/IE_IGFS_LFs.csv"
-#print(dataInputFile)
-#parsedData <- read_csv(dataInputFile)
-
-# Assuming we operate on one haulSubsetType of quarters, cruise, ship, and countries
-#maxYear <- max(unique(parsedData$Year))
-
-# TODO fix this
-#maxYear <- 2018
-
 # Color
 Current_color <- "#e69500"
 Hist_color <- "#00c4e6"
 
 # Get the last haul of the selected year
-getLastHaul <- function(year, dataToUse) {
-  max(getHauls(year, dataToUse))
+getLastHaul <- function(year, HLData) {
+  max(getHauls(year=year, HLData=HLData))
 }
 
 # Get last list of of the selected year
-getHauls <- function(year=1, dataToUse) {
-  #print('getHauls')
-  #print(paste("year",year))
-  #print(paste("nrow(dataToUse)",nrow(dataToUse)))
-  #print(head(dataToUse))
-  
+getHauls <- function(year=-1,time=0, HLData, HHData=NULL) {
+
   if (year==-1){
-    returnValue <- unique(dataToUse()[,]$HaulNo)
+    returnValue <- unique(HLData()$HaulNo)
+  } else if (time==24){
+    
+    # get all the hauls that were on the same date as the last haul
+    lastHaul <- max(unique(HLData()[HLData()$Year==year,]$HaulNo))
+    lastHaulHeader <- HHData()[HHData()$HaulNo==lastHaul,]
+    lasthaulYear <- as.character(lastHaulHeader$Year)
+    lasthaulMonth <- as.character(lastHaulHeader$Month)
+    lastHaulDay <- as.character(lastHaulHeader$Day)
+
+    returnValue <- HHData()[HHData()$Year==lasthaulYear & HHData()$Month==lasthaulMonth & HHData()$Day==lastHaulDay,]$HaulNo
+    
+    
   } else {
-    returnValue <- unique(dataToUse()[dataToUse()$Year==year,]$HaulNo)
+    returnValue <- unique(HLData()[HLData()$Year==year,]$HaulNo)
   }
   
-  
-  #returnValue <- unique(dataToUse[dataToUse$Year==year,]$HaulNo)
-  #print(returnValue)
   returnValue
 }
 
 # Helper function to choose the correct get haul function (above)
-getHaulList <- function(haulSubsetType, dataToUse){
-  if(haulSubsetType=="all")
-    hauls <- getHauls(dataToUse=dataToUse) 
-  if(haulSubsetType=="last"){
-    #print(as.character(dataToUse$Year))
-    maxYear <- max(unique(as.character(dataToUse()$Year)))
-    #print(paste("maxYear",maxYear))
-    hauls <- getLastHaul(year=maxYear,dataToUse=dataToUse)
+getHaulList <- function(haulSubsetType, HLData, HHData=NULL){
+  
+  hauls <- NA
+  
+  maxYear <- max(unique(as.character(HLData()$Year)))
+  
+  if(length(haulSubsetType)>0){
+  
+  if(haulSubsetType=="all") {
+    hauls <- getHauls(HLData=HLData) 
+  } else if (haulSubsetType=="lastday"){
+    hauls <- getHauls(year=maxYear, time=24, HLData=HLData, HHData=HHData)
+  } else if(haulSubsetType=="last"){
+    hauls <- getLastHaul(year=maxYear,HLData=HLData)
+  }
+  
   }
   return(hauls)
 }
@@ -110,30 +110,18 @@ getCurrentStation <- function(year, haul, dataToUse) {
   return(stations)
 }
 
-Brush_densityplot <- function(This_year, Last_haul, fish_data){
+Brush_densityplot <- function(This_year, Last_haul, fish_data, all_data){
 
   if(length(Last_haul)==0) return(NULL)
  
-  #print(This_year)
-
-  #print(paste("ALast haul:", Last_haul))
-
-  # Find the nearest hauls
-  #xp <- unique(unlist(fish_data[fish_data$Year==This_year, "HaulNo"]))
-  #if(Last_haul < min(xp)) Last_haul <- min(xp)
-  #else if(Last_haul > max(xp)) Last_haul <- max(xp)
-  #else Last_haul <- which.min(abs(xp - as.integer(Last_haul))) 
-  
-  #print(paste("BLast haul:", Last_haul))
-
   Current_Station <- getCurrentStation(This_year, Last_haul,fish_data)
 
-  #print(Current_Station)
-
+  Fish_choice<-fish_data()[1,"SpecCode"]
+  
   #Last Haul refers to the brush point from the K plot. 
-density_histor <- fish_data() %>% 
+density_histor <- all_data %>% 
   filter(Year != This_year)%>%
-  #filter(SpecCode == Fish_choice)%>% #Fish selection var,
+  filter(SpecCode == Fish_choice)%>% #Fish selection var,
   filter(StNo == Current_Station)#Current Station to match current haul location
 
 density_histor <- as.data.frame(rep(density_histor$LngtClas, density_histor$HLNoAtLngt))
@@ -161,10 +149,11 @@ return(plotOut)
 
 }
 
-K_plot <- function(fish_data, Fish_choice, This_year, Button_choice){
+K_plot <- function(Fish_choice, This_year, Button_choice,fish_data, all_data){
 #In the future this is where the AB table would be linked
 A <- -5.446 # intercept
 B <- 3.1818 #slope of the fit
+
 
 #Calculates the estimated wieght for fish
 fish_stats <- fish_data() %>%
@@ -174,11 +163,21 @@ fish_stats <- fish_data() %>%
   summarise(K = sum(Pred_Wt) - mean(SubWgt),
             Num_fish = sum(HLNoAtLngt)) 
 
-fish_stat <- fish_stats %>% filter(Year != This_year)  
+Fish_choice<-fish_data()[1,"SpecCode"]
 
-fish_mean <- mean(fish_stat$K,na.rm = TRUE)
+fish_stats_all <- all_data %>%
+  filter(SpecCode == Fish_choice)%>%
+  mutate(Pred_Wt = HLNoAtLngt * (exp(A)*(LngtClas/10)^B))%>%
+  group_by(Year,HaulNo,CatIdentifier)%>%
+  summarise(K = sum(Pred_Wt) - mean(SubWgt),
+            Num_fish = sum(HLNoAtLngt)) 
 
-fish_CI <- sd(fish_stat$K, na.rm = TRUE)
+fish_stat <- fish_stats_all %>% filter(Year != This_year)  
+#fish_stat <- fish_stats
+
+fish_mean <- mean(fish_stats_all$K,na.rm = TRUE)
+
+fish_CI <- sd(fish_stats_all$K, na.rm = TRUE)
 
 #Plot
 plotOut <- ggplot()+

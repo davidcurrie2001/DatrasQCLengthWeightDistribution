@@ -119,7 +119,7 @@ Brush_densityplot <- function(This_year, Last_haul, fish_data, all_data){
   Fish_choice<-fish_data()[1,"SpecCode"]
   
   #Last Haul refers to the brush point from the K plot. 
-density_histor <- all_data %>% 
+density_histor <- all_data() %>% 
   filter(Year != This_year)%>%
   filter(SpecCode == Fish_choice)%>% #Fish selection var,
   filter(StNo == Current_Station)#Current Station to match current haul location
@@ -165,7 +165,7 @@ fish_stats <- fish_data() %>%
 
 Fish_choice<-fish_data()[1,"SpecCode"]
 
-fish_stats_all <- all_data %>%
+fish_stats_all <- all_data() %>%
   filter(SpecCode == Fish_choice)%>%
   mutate(Pred_Wt = HLNoAtLngt * (exp(A)*(LngtClas/10)^B))%>%
   group_by(Year,HaulNo,CatIdentifier)%>%

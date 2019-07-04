@@ -13,4 +13,4 @@ COPY global.R /srv/shiny-server/
 COPY ui.R /srv/shiny-server/
 CMD ["/usr/bin/shiny-server.sh"]
 # docker build -t mi/datrasqc:test .
-# docker run --name datrasqc -d --rm -v $PWD/data:/srv/shiny-server/data -p 3845:3838 mi/datrasqc:test
+# docker run --name datrasqc -d --rm -v $PWD/DatrasData:/srv/shiny-server/data -p 3845:3838 mi/datrasqc:test

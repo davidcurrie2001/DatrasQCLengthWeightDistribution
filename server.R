@@ -41,6 +41,12 @@ server <- function(input, output,session) {
     
   })
   
+  myUnfilteredData<- reactive({
+    
+    d <-DataAndFilters()[[1]]
+
+  })
+  
   # Reactive HL data
   HL<- reactive({
     myData()[["HL"]]
@@ -54,6 +60,21 @@ server <- function(input, output,session) {
   # Reactive CA data
   CA<- reactive({
     myData()[["CA"]]
+  })
+  
+  # Reactive HL data
+  unfilteredHL<- reactive({
+    myUnfilteredData()[["HL"]]
+  })
+  
+  # Reactive HH data
+  unfilteredHH<- reactive({
+    myUnfilteredData()[["HH"]]
+  })
+  
+  # Reactive CA data
+  unfilteredCA<- reactive({
+    myUnfilteredData()[["CA"]]
   })
   
 
@@ -92,20 +113,20 @@ server <- function(input, output,session) {
   # Define for the plots
   output$plot_main <- renderPlotly({
     
-    unfilteredData <-  DataAndFilters()[[1]][["HL"]]
     
-    ggplotly(K_plot(This_year=maxYear(), Button_choice=getHaulList(input[["haulSubset"]],HLData=HL,HHData=HH),fish_data=HL, all_data=unfilteredData ))
+    
+    ggplotly(K_plot(This_year=maxYear(), Button_choice=getHaulList(input[["haulSubset"]],HLData=HL,HHData=HH),fish_data=HL, all_data=unfilteredHL ))
+
     
   })
 
   # Define for the sub-plots on-hover
   output$plot_sub <- renderPlot({
     
-    unfilteredData <-  DataAndFilters()[[1]][["HL"]]
-    
+
     ed <- event_data("plotly_hover")
     if (!is.null(ed))
-        Brush_densityplot(maxYear(),  ed$x, HL, unfilteredData)
+        Brush_densityplot(maxYear(),  ed$x, HL, unfilteredHL)
   })
 
   output$info <- renderText({

@@ -1,6 +1,7 @@
 # Define server logic ----
 server <- function(input, output,session) {
   
+  ## STANDARD REACTIVE DATRAS DATA START
   
   # Use reactive poll so that our data will be updated when the data/filteredData.rds is updated
   DataAndFilters <- reactivePoll(1000, session,
@@ -22,62 +23,63 @@ server <- function(input, output,session) {
                                    filters <- ''
                                    if (file.exists(AllDataFile)) {
                                      allData <- readICES(AllDataFile ,strict=TRUE)
-                                   } 
+                                   }
                                    if (file.exists(myFilters)){
                                      filters <- read.csv(myFilters, header = TRUE)
                                    }
                                    list(allData,filters)
                                  }
   )
-  
+
 
   # Reactive data
   myData<- reactive({
-    
+
     d <-DataAndFilters()[[1]]
     f <-DataAndFilters()[[2]]
-    
+
     dataToUse <- FilterData(d,f)
-    
+
   })
-  
+
+  # Unfiltered data
   myUnfilteredData<- reactive({
-    
+
     d <-DataAndFilters()[[1]]
 
   })
-  
+
   # Reactive HL data
   HL<- reactive({
     myData()[["HL"]]
   })
-  
+
   # Reactive HH data
   HH<- reactive({
     myData()[["HH"]]
   })
-  
+
   # Reactive CA data
   CA<- reactive({
     myData()[["CA"]]
   })
-  
+
   # Reactive HL data
   unfilteredHL<- reactive({
     myUnfilteredData()[["HL"]]
   })
-  
+
   # Reactive HH data
   unfilteredHH<- reactive({
     myUnfilteredData()[["HH"]]
   })
-  
+
   # Reactive CA data
   unfilteredCA<- reactive({
     myUnfilteredData()[["CA"]]
   })
-  
 
+  ## STANDARD REACTIVE DATRAS DATA END
   
   # Reactive max year
   maxYear<- reactive({

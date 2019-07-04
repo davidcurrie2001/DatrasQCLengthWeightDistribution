@@ -3,88 +3,102 @@ server <- function(input, output,session) {
   
   ## STANDARD REACTIVE DATRAS DATA START
   
-  # Use reactive poll so that our data will be updated when the data/filteredData.rds is updated
-  DataAndFilters <- reactivePoll(1000, session,
-                                 # This function returns the time that files were last modified
-                                 checkFunc = function() {
-                                   myValue <- ''
-                                   if (file.exists(AllDataFile)) {
-                                     myValue <- paste(myValue , file.info(AllDataFile)$mtime[1])
-                                   }
-                                   if (file.exists(myFilters)) {
-                                     myValue <- paste(myValue , file.info(myFilters)$mtime[1])
-                                   }
-                                   myValue
-                                 },
-                                 # This function returns the content the files
-                                 valueFunc = function() {
-                                   #print('Loading data')
-                                   allData <- ''
-                                   filters <- ''
-                                   if (file.exists(AllDataFile)) {
-                                     allData <- readICES(AllDataFile ,strict=TRUE)
-                                   }
-                                   if (file.exists(myFilters)){
-                                     filters <- read.csv(myFilters, header = TRUE)
-                                   }
-                                   list(allData,filters)
-                                 }
+  # Use reactive poll so that our data will be updated when the data or filters are updated
+  
+  datrasData <- reactivePoll(1000, session,
+                             # This function returns the time that files were last modified
+                             checkFunc = function() {
+                               myValue <- ''
+                               if (file.exists(AllDataFile)) {
+                                 myValue <- paste(myValue , file.info(AllDataFile)$mtime[1])
+                               }
+                               myValue
+                             },
+                             # This function returns the content the files
+                             valueFunc = function() {
+                               #print('Loading data')
+                               allData <- ''
+                               if (file.exists(AllDataFile)) {
+                                 allData <- readICES(AllDataFile ,strict=TRUE)
+                               }
+                               allData
+                             }
   )
-
-
+  
+  datrasFilters <- reactivePoll(1000, session,
+                                # This function returns the time that files were last modified
+                                checkFunc = function() {
+                                  myValue <- ''
+                                  if (file.exists(myFilters)) {
+                                    myValue <- paste(myValue , file.info(myFilters)$mtime[1])
+                                  }
+                                  myValue
+                                },
+                                # This function returns the content the files
+                                valueFunc = function() {
+                                  #print('Loading data')
+                                  filters <- ''
+                                  if (file.exists(myFilters)){
+                                    filters <- read.csv(myFilters, header = TRUE)
+                                  }
+                                  filters
+                                }
+  )
+  
+  
   # Reactive data
   myData<- reactive({
-
-    d <-DataAndFilters()[[1]]
-    f <-DataAndFilters()[[2]]
-
+    
+    d <- datrasData()
+    f <- datrasFilters()
+    
     dataToUse <- FilterData(d,f)
-
+    
   })
-
+  
   # Unfiltered data
   myUnfilteredData<- reactive({
-
-    d <-DataAndFilters()[[1]]
-
+    
+    d <- datrasData()
+    
   })
-
+  
   # Reactive HL data
   HL<- reactive({
     if ("HL" %in% names(myData()))
       myData()[["HL"]]
   })
-
+  
   # Reactive HH data
   HH<- reactive({
     if ("HH" %in% names(myData()))
       myData()[["HH"]]
   })
-
+  
   # Reactive CA data
   CA<- reactive({
     if ("CA" %in% names(myData()))
       myData()[["CA"]]
   })
-
+  
   # Reactive unfiltered HL data
   unfilteredHL<- reactive({
     if ("HL" %in% names(myUnfilteredData()))
       myUnfilteredData()[["HL"]]
   })
-
+  
   # Reactive unfiltered HH data
   unfilteredHH<- reactive({
     if ("HH" %in% names(myUnfilteredData()))
       myUnfilteredData()[["HH"]]
   })
-
+  
   # Reactive unfiltered CA data
   unfilteredCA<- reactive({
     if ("CA" %in% names(myUnfilteredData()))
       myUnfilteredData()[["CA"]]
   })
-
+  
   ## STANDARD REACTIVE DATRAS DATA END
   
   # Reactive max year

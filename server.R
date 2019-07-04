@@ -51,32 +51,38 @@ server <- function(input, output,session) {
 
   # Reactive HL data
   HL<- reactive({
-    myData()[["HL"]]
+    if ("HL" %in% names(myData()))
+      myData()[["HL"]]
   })
 
   # Reactive HH data
   HH<- reactive({
-    myData()[["HH"]]
+    if ("HH" %in% names(myData()))
+      myData()[["HH"]]
   })
 
   # Reactive CA data
   CA<- reactive({
-    myData()[["CA"]]
+    if ("CA" %in% names(myData()))
+      myData()[["CA"]]
   })
 
-  # Reactive HL data
+  # Reactive unfiltered HL data
   unfilteredHL<- reactive({
-    myUnfilteredData()[["HL"]]
+    if ("HL" %in% names(myUnfilteredData()))
+      myUnfilteredData()[["HL"]]
   })
 
-  # Reactive HH data
+  # Reactive unfiltered HH data
   unfilteredHH<- reactive({
-    myUnfilteredData()[["HH"]]
+    if ("HH" %in% names(myUnfilteredData()))
+      myUnfilteredData()[["HH"]]
   })
 
-  # Reactive CA data
+  # Reactive unfiltered CA data
   unfilteredCA<- reactive({
-    myUnfilteredData()[["CA"]]
+    if ("CA" %in% names(myUnfilteredData()))
+      myUnfilteredData()[["CA"]]
   })
 
   ## STANDARD REACTIVE DATRAS DATA END
@@ -114,7 +120,6 @@ server <- function(input, output,session) {
   
   # Define for the plots
   output$plot_main <- renderPlotly({
-    
     
     
     ggplotly(K_plot(This_year=maxYear(), Button_choice=getHaulList(input[["haulSubset"]],HLData=HL,HHData=HH),fish_data=HL, all_data=unfilteredHL ))

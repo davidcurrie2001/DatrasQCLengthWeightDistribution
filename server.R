@@ -39,7 +39,7 @@ server <- function(input, output,session) {
                                   #print('Loading data')
                                   filters <- ''
                                   if (file.exists(myFilters)){
-                                    filters <- read.csv(myFilters, header = TRUE)
+                                    filters <- read.csv(myFilters, header = TRUE, stringsAsFactors=FALSE, colClasses = c("character"))
                                   }
                                   filters
                                 }

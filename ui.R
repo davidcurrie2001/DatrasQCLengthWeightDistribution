@@ -1,7 +1,7 @@
 library(plotly)
 # Define UI ----
 ui <- fluidPage(
-  titlePanel("Datras QC Tool"),
+  #titlePanel("Datras QC Tool"),
   sidebarLayout(
     sidebarPanel(
       titlePanel("Controls"),
